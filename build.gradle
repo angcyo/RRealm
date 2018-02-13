@@ -1,0 +1,5 @@
+apply from: '../RLibrary/lib.gradle'
+
+dependencies {
+    api fileTree(include: ['*.jar'], dir: 'libs')
+}

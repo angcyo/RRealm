@@ -3,4 +3,5 @@ apply plugin: 'realm-android'
 
 dependencies {
     api fileTree(include: ['*.jar'], dir: 'libs')
+    api project(':RLibrary:uiview')
 }

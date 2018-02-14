@@ -5,6 +5,8 @@ import android.os.Looper;
 
 import com.angcyo.library.utils.L;
 
+import java.util.Collection;
+
 import io.realm.DynamicRealm;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -35,6 +37,32 @@ public class RRealm {
 
     public static RRealm instance() {
         return Holder.instance;
+    }
+
+    public static <R extends RealmObject> void update(final R object) {
+        if (object == null) {
+            return;
+        }
+        exe(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                realm.insertOrUpdate(object);
+            }
+        });
+        L.i(TAG, "更新数据:" + object.toString());
+    }
+
+    public static <R extends RealmObject> void update(final Collection<R> objects) {
+        if (objects == null) {
+            return;
+        }
+        exe(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                realm.insertOrUpdate(objects);
+            }
+        });
+        L.i(TAG, "更新数据:" + objects.toString());
     }
 
     /**

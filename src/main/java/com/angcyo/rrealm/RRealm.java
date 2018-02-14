@@ -28,6 +28,8 @@ public class RRealm {
 
     private Realm mRealm;
 
+    private static final String TAG = "RRealm";
+
     private RRealm() {
     }
 
@@ -52,6 +54,7 @@ public class RRealm {
                 realm.commitTransaction();
             }
         } catch (Exception e) {
+            e.printStackTrace();
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -61,7 +64,7 @@ public class RRealm {
             }
         }
 
-        L.i("保存至数据库:" + object.toString());
+        L.i(TAG, "保存至数据库:" + object.toString());
     }
 
     /**
@@ -81,6 +84,7 @@ public class RRealm {
                 realm.commitTransaction();
             }
         } catch (Exception e) {
+            e.printStackTrace();
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -122,6 +126,7 @@ public class RRealm {
                 realm.executeTransaction(transaction);
             }
         } catch (Exception e) {
+            e.printStackTrace();
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -204,6 +209,7 @@ public class RRealm {
                 realm.commitTransaction();
             }
         } catch (Exception e) {
+            e.printStackTrace();
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -215,27 +221,24 @@ public class RRealm {
     }
 
     public static void init(final Application application) {
-        init(application, application.getPackageName());
+        init(application, application.getPackageName() + ".realm");
     }
 
     /**
      * 初始化
      */
     public static void init(final Application application, String name) {
-        Realm.init(application);
-        RealmConfiguration.Builder builder = new RealmConfiguration.Builder()
-                .name(name)
-                .migration(new RealmMigration() {
-                    @Override
-                    public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
-                        L.e("数据库升级 Start:" + oldVersion + "->" + newVersion);
+        init(application, true, name, 1, new RealmMigration() {
+            @Override
+            public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
+                L.e(TAG, "数据库升级 Start:" + oldVersion + "->" + newVersion);
 //                        RealmSchema schema = realm.getSchema();
 //                        realm.removeAllChangeListeners();
 //                        realm.deleteAll();
 //                        schema.close();
 //                        Realm.removeDefaultConfiguration();
 //                        init(application);
-                        L.e("数据库升级 End:" + oldVersion + "->" + newVersion);
+                L.e(TAG, "数据库升级 End:" + oldVersion + "->" + newVersion);
 
 //                        if (oldVersion == 0) {
 //                            schema.create("Person")
@@ -251,18 +254,27 @@ public class RRealm {
 //                                    .addRealmListField("dogs", schema.get("Dog"));
 //                            oldVersion++;
 //                        }
-                    }
-                })
-                .schemaVersion(1);
+            }
+        });
+    }
+
+    public static void init(final Application application, boolean debug, String name, int schemaVersion, RealmMigration realmMigration) {
+        Realm.init(application);
+        RealmConfiguration.Builder builder = new RealmConfiguration.Builder()
+                .name(name)
+                .migration(realmMigration)
+                .schemaVersion(schemaVersion);
 
         RealmConfiguration config;
-//        if (BuildConfig.SHOW_DEBUG) {
-        config = builder.deleteRealmIfMigrationNeeded().build();
-//        } else {
-//            config = builder.build();
-//        }
+        if (debug) {
+            config = builder.deleteRealmIfMigrationNeeded().build();
+        } else {
+            config = builder.build();
+        }
 
         Realm.setDefaultConfiguration(config);
+
+        L.e(TAG, "数据库 保存在:" + config.getPath() + " " + config.getRealmFileName());
     }
 
     /**

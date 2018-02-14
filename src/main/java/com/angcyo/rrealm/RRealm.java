@@ -214,13 +214,17 @@ public class RRealm {
         }
     }
 
+    public static void init(final Application application) {
+        init(application, application.getPackageName());
+    }
+
     /**
      * 初始化
      */
-    public static void init(final Application application) {
+    public static void init(final Application application, String name) {
         Realm.init(application);
         RealmConfiguration.Builder builder = new RealmConfiguration.Builder()
-                .name("valley.realm")
+                .name(name)
                 .migration(new RealmMigration() {
                     @Override
                     public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {

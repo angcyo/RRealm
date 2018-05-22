@@ -52,7 +52,40 @@ public class RRealm {
                 realm.commitTransaction();
             }
         } catch (Exception e) {
-            L.e("realm异常-> " + e.getMessage());
+            realm.cancelTransaction();
+        } finally {
+            if (!isMainThread()) {
+                if (realm != null) {
+                    realm.close();
+                }
+            }
+        }
+
+        L.i("保存至数据库:" + object.toString());
+    }
+
+    /**
+     * 保存对象, 并且清空之前的数据
+     */
+    public static <R extends RealmObject> void saveAndDelete(R object) {
+        if (object == null) {
+            return;
+        }
+        Realm realm = isMainThread() ? realm() : getRealmInstance();
+        try {
+            realm.delete(object.getClass());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            if (realm.isInTransaction()) {
+                realm.copyToRealm(object);
+            } else {
+                realm.beginTransaction();
+                realm.copyToRealm(object);
+                realm.commitTransaction();
+            }
+        } catch (Exception e) {
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -82,7 +115,35 @@ public class RRealm {
                 realm.commitTransaction();
             }
         } catch (Exception e) {
-            L.e("realm异常-> " + e.getMessage());
+            realm.cancelTransaction();
+        } finally {
+            if (!isMainThread()) {
+                if (realm != null) {
+                    realm.close();
+                }
+            }
+        }
+    }
+
+    public static <R extends RealmObject> void saveAndDelete(Iterable<R> objects) {
+        if (objects == null) {
+            return;
+        }
+        Realm realm = isMainThread() ? realm() : getRealmInstance();
+        try {
+            realm.delete(objects.iterator().next().getClass());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            if (realm.isInTransaction()) {
+                realm.copyToRealm(objects);
+            } else {
+                realm.beginTransaction();
+                realm.copyToRealm(objects);
+                realm.commitTransaction();
+            }
+        } catch (Exception e) {
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -124,7 +185,6 @@ public class RRealm {
                 realm.executeTransaction(transaction);
             }
         } catch (Exception e) {
-            L.e("realm异常-> " + e.getMessage());
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -207,7 +267,6 @@ public class RRealm {
                 realm.commitTransaction();
             }
         } catch (Exception e) {
-            L.e("realm异常-> " + e.getMessage());
             realm.cancelTransaction();
         } finally {
             if (!isMainThread()) {
@@ -219,13 +278,34 @@ public class RRealm {
     }
 
     /**
+     * 获取指定类的最后一个数据记录
+     */
+    public static <E extends RealmModel> void get(final Class<E> clazz, final Action1<E> action) {
+        RRealm.where(new Action1<Realm>() {
+            @Override
+            public void call(Realm realm) {
+                E last = null;
+                try {
+                    last = realm.where(clazz).findAll().last();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (last == null) {
+                    action.call(null);
+                } else {
+                    action.call(realm.copyFromRealm(last));
+                }
+            }
+        });
+    }
+
+    /**
      * 初始化
      */
-    public static void init(final Application application, boolean deleteIfNeed) {
+    public static void init(final Application application) {
         Realm.init(application);
         RealmConfiguration.Builder builder = new RealmConfiguration.Builder()
-                .name("realm_db.realm")
-                //.directory()
+                .name("valley.realm")
                 .migration(new RealmMigration() {
                     @Override
                     public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
@@ -257,12 +337,12 @@ public class RRealm {
                 .schemaVersion(1);
 
         RealmConfiguration config;
-        if (deleteIfNeed) {
-            config = builder.deleteRealmIfMigrationNeeded().build();
-        } else {
-            config = builder.build();
-        }
-        L.e("realm 数据库位置 -> " + config.getPath());
+//        if (BuildConfig.SHOW_DEBUG) {
+        config = builder.deleteRealmIfMigrationNeeded().build();
+//        } else {
+//            config = builder.build();
+//        }
+
         Realm.setDefaultConfiguration(config);
     }
 

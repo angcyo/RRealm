@@ -2,16 +2,7 @@ package com.angcyo.realm;
 
 import android.app.Application;
 import android.os.Looper;
-
-import com.angcyo.library.utils.L;
-
-import io.realm.DynamicRealm;
-import io.realm.Realm;
-import io.realm.RealmConfiguration;
-import io.realm.RealmMigration;
-import io.realm.RealmModel;
-import io.realm.RealmObject;
-import rx.functions.Action1;
+import io.realm.*;
 
 /**
  * Copyright (C) 2016,深圳市红鸟网络科技股份有限公司 All rights reserved.
@@ -256,14 +247,14 @@ public class RRealm {
         }
     }
 
-    public static void where(Action1<Realm> action) {
+    public static void where(OnRealmAction action) {
         Realm realm = isMainThread() ? realm() : getRealmInstance();
         try {
             if (realm.isInTransaction()) {
-                action.call(realm);
+                action.onAction(realm);
             } else {
                 realm.beginTransaction();
-                action.call(realm);
+                action.onAction(realm);
                 realm.commitTransaction();
             }
         } catch (Exception e) {
@@ -280,10 +271,10 @@ public class RRealm {
     /**
      * 获取指定类的最后一个数据记录
      */
-    public static <E extends RealmModel> void get(final Class<E> clazz, final Action1<E> action) {
-        RRealm.where(new Action1<Realm>() {
+    public static <E extends RealmModel> void get(final Class<E> clazz, final OnRealmAction<E> action) {
+        RRealm.where(new OnRealmAction<Realm>() {
             @Override
-            public void call(Realm realm) {
+            public int onAction(Realm realm) {
                 E last = null;
                 try {
                     last = realm.where(clazz).findAll().last();
@@ -291,10 +282,11 @@ public class RRealm {
                     e.printStackTrace();
                 }
                 if (last == null) {
-                    action.call(null);
+                    action.onAction(null);
                 } else {
-                    action.call(realm.copyFromRealm(last));
+                    action.onAction(realm.copyFromRealm(last));
                 }
+                return 0;
             }
         });
     }
@@ -303,9 +295,8 @@ public class RRealm {
      * 初始化
      */
     public static void init(final Application application) {
-        Realm.init(application);
         RealmConfiguration.Builder builder = new RealmConfiguration.Builder()
-                .name("valley.realm")
+                .name(application.getPackageName() + ".realm")
                 .migration(new RealmMigration() {
                     @Override
                     public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
@@ -343,7 +334,15 @@ public class RRealm {
 //            config = builder.build();
 //        }
 
-        Realm.setDefaultConfiguration(config);
+        init(application, config);
+    }
+
+    /**
+     * 初始化
+     */
+    public static void init(final Application application, RealmConfiguration configuration) {
+        Realm.init(application);
+        Realm.setDefaultConfiguration(configuration);
     }
 
     /**
@@ -361,9 +360,13 @@ public class RRealm {
         return Realm.getDefaultInstance();
     }
 
+    public static Realm getRealmInstance(RealmConfiguration configuration) {
+        return Realm.getInstance(configuration);
+    }
+
     public Realm getRealm() {
         if (!isMainThread()) {
-            throw new IllegalArgumentException("请在主线程调用, 子线程请直接调用 getRealmInstance(),并自行close");
+            throw new IllegalArgumentException("请在主线程调用, 子线程请直接调用 getRealmInstance(), 并自行close()方法.");
         }
         if (mRealm == null || mRealm.isClosed()) {
             mRealm = Realm.getDefaultInstance();

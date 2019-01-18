@@ -1,7 +1,9 @@
-apply from: '../RLibrary/lib.gradle'
+apply from: allGradle.lib_base
 apply plugin: 'realm-android'
+
+def _S_VER = rootProject.hasProperty("S_VER") ? rootProject.ext.S_VER : '28.0.0'
 
 dependencies {
     api fileTree(include: ['*.jar'], dir: 'libs')
-    api project(':RLibrary:uiview')
+    //compileOnly 'com.android.support:support-annotations:' + _S_VER
 }

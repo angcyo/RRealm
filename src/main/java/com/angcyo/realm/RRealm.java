@@ -295,6 +295,7 @@ public class RRealm {
      * 初始化
      */
     public static void init(final Application application) {
+        Realm.init(application);
         RealmConfiguration.Builder builder = new RealmConfiguration.Builder()
                 .name(application.getPackageName() + ".realm")
                 .migration(new RealmMigration() {
@@ -334,14 +335,13 @@ public class RRealm {
 //            config = builder.build();
 //        }
 
-        init(application, config);
+        initConfig(config);
     }
 
     /**
      * 初始化
      */
-    public static void init(final Application application, RealmConfiguration configuration) {
-        Realm.init(application);
+    public static void initConfig(RealmConfiguration configuration) {
         Realm.setDefaultConfiguration(configuration);
     }
 

@@ -247,7 +247,7 @@ public class RRealm {
         }
     }
 
-    public static void where(OnRealmAction action) {
+    public static void where(OnRealmAction<Realm> action) {
         Realm realm = isMainThread() ? realm() : getRealmInstance();
         try {
             if (realm.isInTransaction()) {
